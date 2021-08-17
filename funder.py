@@ -11,7 +11,11 @@ def approval():
         App.globalPut(Bytes("Total"), Int(0)),
         Return(Int(1))
     ])
+
+    # Assertions for follow usage
     is_creator = Txn.sender() == App.globalGet(Bytes("Creator"))
+
+    # Donate method assertion and logic
     donate_assertions = And(
         Global.group_size() == Int(2),
         Gtxn[1].asset_receiver() == App.globalGet(Bytes("Escrow")),
@@ -32,6 +36,7 @@ def approval():
         Return(Int(1))
     ])
 
+    # Claim method assertion and logic
     claim_assertions = And(
         Global.group_size() == Int(2),
         is_creator,
@@ -45,24 +50,31 @@ def approval():
         Return(Int(1))
     ])
 
+    # Optin for the Escrow
     optin = Seq([
         Assert(is_creator),
         Assert(Global.group_size() == Int(2)),
         Return(Int(1))
     ])
-    opton = Seq([
+
+    # Optin for the smart contract.
+    optinapp = Seq([
         Return(Int(1))
     ])
 
+    # noop is normal Application call. Handler will dispatch the call.
     handle_noop = Cond(
         [Txn.application_args[0] == Bytes("donate"), donate],
         [Txn.application_args[0] == Bytes("Opt"), optin],
         [Txn.application_args[0] == Bytes("claim"), claim]
     )
 
+    # User Exit the Application
     closeout = Seq([
         Return(Int(1))
     ])
+
+    # After create the Application, update application's escrow account by the user.
     update_escrow = Seq([
         Assert(is_creator),
         Assert(Txn.application_args.length() == Int(1)),
@@ -70,6 +82,7 @@ def approval():
         Return(Int(1))
     ])
 
+    # Delete this Application‘s logic and assertion.
     deleteapp_assertions = And(
         is_creator,
         App.globalGet(Bytes("Total")) == Int(0)
@@ -79,10 +92,12 @@ def approval():
         Assert(deleteapp_assertions),
         Return(Int(1))
     ])
+
+    # The whole program should be compile.
     program = Cond(
         [Txn.application_id() == Int(0), on_creation],
         [Txn.on_completion() == OnComplete.NoOp, handle_noop],
-        [Txn.on_completion() == OnComplete.OptIn, opton],
+        [Txn.on_completion() == OnComplete.OptIn, optinapp],
         [Txn.on_completion() == OnComplete.CloseOut, closeout],
         [Txn.on_completion() == OnComplete.UpdateApplication, update_escrow],
         [Txn.on_completion() == OnComplete.DeleteApplication, deleteapp]
@@ -105,7 +120,7 @@ with open('clear.teal', 'w') as f:
 
 
 def escrow(app_id):
-    # App_id 直接在teal文件改
+    # The appid will be edit in the TEAL with backend.
     is_two_tx = Global.group_size() == Int(2)
     is_appcall = Gtxn[0].type_enum() == TxnType.ApplicationCall
     is_appid = Gtxn[0].application_id() == Int(app_id)
