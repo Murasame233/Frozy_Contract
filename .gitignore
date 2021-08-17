@@ -1,0 +1,9 @@
+contract_env
+venv
+
+**/node_modules
+test.py
+**/*.teal
+.vscode
+**/.env
+**/*.db
