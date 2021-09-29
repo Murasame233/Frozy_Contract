@@ -1,6 +1,6 @@
 contract_env
 venv
-
+**/yarn.lock
 **/node_modules
 test.py
 **/*.teal
